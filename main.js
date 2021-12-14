@@ -6,8 +6,10 @@ var path = require('path');
 var template = require('./lib/template.js');
 var sanitizeHtml = require('sanitize-html');
 var bodyParser = require('body-parser');
+var compression = require('compression');
 
 app.use(bodyParser.urlencoded({extended:false}));
+app.use(compression());
 
 // get > route 방식
 app.get('/', function(req,res){ 
