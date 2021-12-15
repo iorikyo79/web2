@@ -8,54 +8,55 @@ var sanitizeHtml = require('sanitize-html');
 var bodyParser = require('body-parser');
 var compression = require('compression');
 
-app.use(bodyParser.urlencoded({extended:false}));
-app.use(compression());
+app.use(express.static('public'));
+app.use(bodyParser.urlencoded({extended:false})); // request에서 body를 쉽게 받을수 있도록
+app.use(compression()); // post data 압축 전송 처리
+app.get('*', function(request, response, next){   // get으로 들어오는 모든(*) 요청에 filelist를 리턴
+  fs.readdir('./data', function(error, filelist){
+    request.list = filelist;
+    next();
+  });
+});
 
 // get > route 방식
-app.get('/', function(req,res){ 
-    fs.readdir('./data', function(error, filelist){
-    var title = 'Welcome';
-    var description = 'Hello, Node.js';
-    var list = template.list(filelist);
-    var html = template.HTML(title, list,
-      `<h2>${title}</h2>${description}`,
-      `<a href="/create">create</a>`
-      );
-    res.send(html);
+app.get('/', function (req, res) {
+  var title = 'Welcome';
+  var description = 'Hello, Node.js';
+  var list = template.list(req.list);
+  var html = template.HTML(title, list,
+    `<h2>${title}</h2>${description}`,
+    `<a href="/create">create</a>`
+    );
+  res.send(html);
+}); 
+
+app.get('/page/:pageId', function (req, res) {
+  var filteredId = path.parse(req.params.pageId).base;
+  fs.readFile(`data/${filteredId}`, 'utf8', function (err, description) {
+    var title = req.params.pageId;
+    var sanitizedTitle = sanitizeHtml(title);
+    var sanitizedDescription = sanitizeHtml(description, {
+      allowedTags: ['h1']
     });
-  }
-);
 
-app.get('/page/:pageId', function(req,res) {
-  fs.readdir('./data', function(error, filelist){
-    var filteredId = path.parse(req.params.pageId).base;
-    fs.readFile(`data/${filteredId}`, 'utf8', function(err, description){
-      var title = req.params.pageId;
-      var sanitizedTitle = sanitizeHtml(title);
-      var sanitizedDescription = sanitizeHtml(description, {
-         allowedTags:['h1']
-      });
-
-      var list = template.list(filelist);
-      var html = template.HTML(sanitizedTitle, list,
-        `<h2>${sanitizedTitle}</h2>${sanitizedDescription}`,
-        ` <a href="/create">create</a>
+    var list = template.list(req.list);
+    var html = template.HTML(sanitizedTitle, list,
+      `<h2>${sanitizedTitle}</h2>${sanitizedDescription}`,
+      ` <a href="/create">create</a>
           <a href="/update/${sanitizedTitle}">update</a>
           <form action="/delete_process" method="post">
             <input type="hidden" name="id" value="${sanitizedTitle}">
             <input type="submit" value="delete">
           </form>`
-      );
-      res.send(html)
-    });
+    );
+    res.send(html)
   });
 });
 
-app.get('/create', function(req,res){
-  fs.readdir('./data', function(error, filelist){
-    var title = 'WEB - create';
-    var list = template.list(filelist);
-    var html = template.HTML(title, list, `
+app.get('/create', function (req, res) {
+  var title = 'WEB - create';
+  var list = template.list(req.list);
+  var html = template.HTML(title, list, `
       <form action="/create_process" method="post">
         <p><input type="text" name="title" placeholder="title"></p>
         <p>
@@ -66,8 +67,7 @@ app.get('/create', function(req,res){
         </p>
       </form>
     `, '');
-    res.send(html)
-  });
+  res.send(html)
 });
 
 app.post('/create_process', function(req,res){
@@ -80,14 +80,13 @@ app.post('/create_process', function(req,res){
     })
 });
 
-app.get('/update/:pageId', function(request, response){
-  fs.readdir('./data', function(error, filelist){
-    var filteredId = path.parse(request.params.pageId).base;
-    fs.readFile(`data/${filteredId}`, 'utf8', function(err, description){
-      var title = request.params.pageId;
-      var list = template.list(filelist);
-      var html = template.HTML(title, list,
-        `
+app.get('/update/:pageId', function (request, response) {
+  var filteredId = path.parse(request.params.pageId).base;
+  fs.readFile(`data/${filteredId}`, 'utf8', function (err, description) {
+    var title = request.params.pageId;
+    var list = template.list(request.list);
+    var html = template.HTML(title, list,
+      `
         <form action="/update_process" method="post">
           <input type="hidden" name="id" value="${title}">
           <p><input type="text" name="title" placeholder="title" value="${title}"></p>
@@ -99,10 +98,9 @@ app.get('/update/:pageId', function(request, response){
           </p>
         </form>
         `,
-        `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`
-      );
-      response.send(html);
-    });
+      `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`
+    );
+    response.send(html);
   });
 });
 
