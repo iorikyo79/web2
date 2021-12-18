@@ -12,6 +12,7 @@ app.use(helmet());
 
 var topicRouter = require('./routes/topic');
 var indexRouter = require('./routes/index');
+var loginRouter = require('./routes/login');
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended:false})); // request에서 body를 쉽게 받을수 있도록
@@ -24,5 +25,6 @@ app.get('*', function(request, response, next){   // get으로 들어오는 모�
 });
 app.use('/', indexRouter);
 app.use('/topic', topicRouter);  // 'topic'으로 시작하는 주소에게 topicRouter를 사용하겠다.
+app.use('/login', loginRouter);
 
 app.listen(3000, () => console.log('example port 3000'));
