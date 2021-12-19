@@ -1,23 +1,22 @@
-const express = require('express');
-const router = express.Router();
+var express = require('express');
+var router = express.Router();
 var template = require('../lib/template.js');
+var auth = require('../lib/auth');
 
-// get > route 방식
-router.get('/', function (req, res) {
+router.get('/', function (request, response) {
+  console.log(request.session);
   var title = 'Welcome';
   var description = 'Hello, Node.js';
-  var list = template.list(req.list);
+  var list = template.list(request.list);
   var html = template.HTML(title, list,
-    `<h2>${title}</h2>${description}`,
-    `<a href="/topic/create">create</a>
-    <form action="/login/login_process" method="post">
-          <p><input type="text" name="id" placeholder="id"></p>
-          <p><input type="password" name="password" placeholder="password"></p>
-          <p><input type="submit" value="login"></p>
-      </form>
     `
+      <h2>${title}</h2>${description}
+      <img src="/images/hello.jpg" style="width:300px; display:block; margin-top:10px;">
+      `,
+    `<a href="/topic/create">create</a>`,
+    auth.statusUI(request, response)
   );
-  res.send(html);
-}); 
+  response.send(html);
+});
 
-  module.exports = router;
+module.exports = router;

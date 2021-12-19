@@ -1,30 +1,47 @@
-const express = require('express');
-const app = express();
+var express = require('express');
+var app = express();
 var fs = require('fs');
-// var qs = require('querystring');
-// var path = require('path');
-// var template = require('./lib/template.js');
-// var sanitizeHtml = require('sanitize-html');
 var bodyParser = require('body-parser');
 var compression = require('compression');
 var helmet = require('helmet')
 app.use(helmet());
-
-var topicRouter = require('./routes/topic');
-var indexRouter = require('./routes/index');
-var loginRouter = require('./routes/login');
+var session = require('express-session')
+var FileStore = require('session-file-store')(session)
 
 app.use(express.static('public'));
-app.use(bodyParser.urlencoded({extended:false})); // request에서 body를 쉽게 받을수 있도록
-app.use(compression()); // post data 압축 전송 처리
-app.get('*', function(request, response, next){   // get으로 들어오는 모든(*) 요청에 filelist를 리턴
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(compression());
+app.use(session({
+  secret: 'asadlfkj!@#!@#dfgasdg',
+  resave: false,
+  saveUninitialized: true,
+  store:new FileStore()
+}))
+
+app.get('*', function(request, response, next){
   fs.readdir('./data', function(error, filelist){
     request.list = filelist;
     next();
   });
 });
-app.use('/', indexRouter);
-app.use('/topic', topicRouter);  // 'topic'으로 시작하는 주소에게 topicRouter를 사용하겠다.
-app.use('/login', loginRouter);
 
-app.listen(3000, () => console.log('example port 3000'));
+var indexRouter = require('./routes/index');
+var topicRouter = require('./routes/topic');
+var authRouter = require('./routes/auth');
+
+app.use('/', indexRouter);
+app.use('/topic', topicRouter);
+app.use('/auth', authRouter);
+
+app.use(function(req, res, next) {
+  res.status(404).send('Sorry cant find that!');
+});
+ 
+app.use(function (err, req, res, next) {
+  console.error(err.stack)
+  res.status(500).send('Something broke!')
+});
+
+app.listen(3000, function() {
+  console.log('Example app listening on port 3000!')
+});
